@@ -1,0 +1,36 @@
+---
+title: "Introduction to Quarto"
+author: "AT"
+format: html
+bibliography: references.bib
+---
+
+## Test Text Formatting
+
+*italic text!*\
+*is this also italic?*
+
+**bold text**\
+**also bold?**
+
+## Test Links
+
+[test link](https://wrmp.org/)
+
+test reference [@oke2020]
+
+## Tables
+
+| Col1 | Col2 | Col3 |
+|------|------|------|
+|      |      |      |
+|      |      |      |
+|      |      |      |
+
+: Test table
+
+## Code chunks
+```{r}
+x <- 2*4
+```
+
