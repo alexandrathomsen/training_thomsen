@@ -1,0 +1,51 @@
+---
+title: "Census Data"
+format: html
+---
+
+```{r}
+library(tidycensus)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+```
+
+```{r}
+#census_api_key("fb571fb42b9fe1dbbab45d6f65b01a599e40694c", install = T)
+```
+
+
+## Decennial pop by state 2020
+```{r}
+pop_2020 <- get_decennial(geography = "state",
+                          variable = "P1_001N",
+                          year = 2020)
+```
+
+
+## Getting table P2
+```{r}
+table_p2_2020 <- get_decennial(geography = "state",
+                               table = "P2",
+                               year = 2020)
+
+unique(table_p2_2020$variable)
+```
+```{r}
+var_pl_2020 <- load_variables(year = 2020, dataset = "pl")
+
+var_dhc_2020 <- load_variables(2020, "dhc")
+```
+
+
+## Get tract-level information for Delta counties 
+```{r}
+delta_hisp_t <- get_decennial(geography = "tract",
+                            state = "CA",
+                            county = c("Alameda","Contra Costa",
+                                       "Sacramento","San Joaquin",
+                                       "Solano","Yolo"),
+                            variable = "P2_002N",
+                            year = 2020)
+```
+

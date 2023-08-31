@@ -1,0 +1,121 @@
+---
+title: "Intro to Text Data"
+author: "Alex Thomsen"
+format: html
+---
+
+# Exercise 1
+
+## Load libraries
+```{r}
+library(gutenbergr) # access public domain texts from Project Gutenberg
+library(tidytext) # text mining using tidy tools
+library(dplyr) # wrangle data
+library(ggplot2) # plot data
+```
+
+## Find ID
+```{r}
+gutenberg_works(title == "Frankenstein; Or, The Modern Prometheus") # frankenstein text
+
+```
+
+## Download
+```{r}
+frankenstein_corp <- gutenberg_download(41445)
+```
+
+## Unnest tokens
+```{r}
+tidy_frankenstein <- frankenstein_corp %>% 
+  unnest_tokens(word, text)
+```
+
+## Remove stop words
+```{r}
+tidy_frankenstein <- anti_join(tidy_frankenstein, stop_words)
+```
+
+## Top 10 words
+```{r}
+top10 <- tidy_frankenstein %>% 
+  count(word) %>% 
+  slice_max(n = 10, order_by = n)
+```
+
+## Bar plot
+```{r}
+ggplot(data = top10, aes(n, reorder(word, n))) +
+  geom_col() +
+    labs(x = "Count",
+         y = "Token")
+```
+
+## Word cloud
+```{r}
+library(wordcloud)
+wordcloud(words = tidy_frankenstein$word, min.freq = 2,
+ scale = c(4, 0.5), max.words=10, random.order=FALSE, rot.per=0.3,
+ colors = brewer.pal(8, "Dark2"))
+```
+
+
+# Exercise 2
+
+## Load libraries
+```{r}
+library(tidytext) # tidy text tools
+library(quanteda) # create a corpus
+library(pdftools) # read in data
+library(dplyr) # wrangle data
+library(stringr) # string manipulation
+library(ggplot2) # plots
+library(wordcloud)
+```
+
+## Load data
+```{r}
+path_df <- "data/delta_plan_ch_4.pdf"
+dp_ch4 <- pdftools::pdf_text(path_df)
+class(dp_ch4)
+```
+
+## Turn into corpus
+```{r}
+corpus_dp_ch4 <- quanteda::corpus(dp_ch4)
+summary(corpus_dp_ch4) # types = # of unique tokens?
+```
+
+## Make corpus tidy
+```{r}
+tidy_dp_ch4 <- tidytext::tidy(corpus_dp_ch4) # removes symbols & punctuation
+```
+
+## Unnest tokens
+```{r}
+tidy_dp_ch4 <- tidy_dp_ch4 %>% 
+  unnest_tokens(output = word, input = text)
+```
+
+## Remove stop words
+```{r}
+tidy_dp_ch4 <- anti_join(tidy_dp_ch4, stop_words)
+```
+
+## Top 10 words
+```{r}
+top10_dp_ch4 <- tidy_dp_ch4 %>% 
+  count(word) %>% 
+  slice_max(n = 10, order_by = n)
+```
+
+## Visualize
+```{r}
+ggplot(top10_dp_ch4, aes(n, reorder(word,n)))+
+  geom_col(fill = "darkorange")+
+  labs(x = "Count",
+       y = NULL,
+       title = "Top 10 Words in Delta Plan Ch 4")+
+  theme_minimal()
+```
+
