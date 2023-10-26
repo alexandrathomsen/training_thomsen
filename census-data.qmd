@@ -8,10 +8,11 @@ library(tidycensus)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
+library(scales)
 ```
 
 ```{r}
-#census_api_key("fb571fb42b9fe1dbbab45d6f65b01a599e40694c", install = T)
+#census_api_key("Enter key here", install = T)
 ```
 
 
@@ -47,5 +48,50 @@ delta_hisp_t <- get_decennial(geography = "tract",
                                        "Solano","Yolo"),
                             variable = "P2_002N",
                             year = 2020)
+```
+
+
+## Exercise 11.4: Get white and Hispanic pop data for Delta 
+```{r}
+delta_wh_hisp_2020 <- get_decennial(geography = "tract",
+                                    state = "CA",
+                                    county = c("Alameda",
+                                               "Contra Costa",
+                                               "Sacramento",
+                                               "San Joaquin",
+                                               "Solano","Yolo"),
+                                    variables = c(hispanic = "P2_002N",
+                                                  white = "P2_005N"),
+                                    year = 2020,
+                                    summary_var = "P2_001N")
+```
+
+## Calculate percentage and clean "NAMES"
+```{r}
+delta_clean <- delta_wh_hisp_2020 %>% 
+  mutate(percent = (value/summary_value)*100) %>% 
+  separate(col = NAME,
+           into = c("tract","county","state"),
+           sep = ", ")
+```
+
+## Plot percentage white/Hispanic data by county
+```{r}
+ggplot(delta_clean, aes(x = percent, fill = county))+
+  geom_density(alpha = 0.3)+
+  facet_wrap(~variable)+
+  theme_light()
+```
+
+
+## Exercise 11.5: Get data
+```{r}
+# variables for 5-year 2017-2021 ACS
+vars <- load_variables(2021, "acs5")
+
+# get data for median gross rent by county in CA
+rent_CA <- get_acs(geography = "county",
+                   state = "CA",
+                   variables = "B25064_001")
 ```
 
