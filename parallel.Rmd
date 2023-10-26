@@ -1,0 +1,168 @@
+---
+title: "parallel"
+author: "Alex Thomsen"
+date: "2023-10-25"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(palmerpenguins)
+library(dplyr)
+library(tidyr)
+```
+
+# Load data
+```{r}
+bill_length <- palmerpenguins::penguins %>% 
+  select(species, bill_length_mm) %>% 
+  drop_na() %>% 
+  as.data.frame()
+
+head(bill_length)
+```
+
+# Loop for a bootstrap analysis
+```{r}
+trials <- 3000
+
+res <- data.frame()
+
+system.time({
+  trial <- 1
+  while(trial <= trials) {
+    index <- sample(100, 100, replace = T)
+    result1 <- glm(bill_length[index,1]~bill_length[index,2], 
+                   family = binomial(logit))
+    r <- coefficients(result1)
+    res <- rbind(res, r)
+    trial <- trial + 1
+  }
+})
+```
+
+# Creating a function
+```{r}
+boot_fx <- function(trial){
+  index <- sample(100, 100, replace = T)
+  result1 <- glm(bill_length[index,1]~bill_length[index,2], 
+                 family = binomial(logit))
+  r <- coefficients(result1)
+  res <- rbind(data.frame(), r)
+}
+
+trials <- seq(1, trials)
+system.time({
+  results <- lapply(trials, boot_fx)
+})
+```
+
+# Parallelize with mclapply
+```{r}
+library(parallel)
+numCores <- detectCores()
+numCores
+```
+
+```{r}
+system.time({
+  res_mca <- mclapply(trials, boot_fx, mc.cores = numCores)
+})
+```
+
+# Foreach as a looping model
+```{r}
+library(foreach)
+foreach(i=seq(2,10,by=2)) %do% {
+  sqrt(i)
+}
+```
+
+```{r}
+library(doParallel)
+registerDoParallel(numCores)
+foreach(i=seq(2,10,by=2), .combine=rbind) %dopar% {
+  sqrt(i)
+} # can use diff types of "combine" in 'foreach' depending on how you want to use the results (concatenate, rbind, calculate mean, etc.)
+```
+
+```{r}
+num_trials <- 3000
+
+system.time({
+  r <- foreach(icount(num_trials), .combine=rbind) %dopar% {
+    index <- sample(100, 100, replace=T)
+    result1 <- glm(bill_length[index,1]~bill_length[index,2], family=binomial(logit))
+    coefficients(result1)
+  }
+})
+```
+
+```{r}
+stopImplicitCluster() # always run at the end to stop using computing resources
+```
+
+
+# Future and furrr
+```{r}
+library(future)
+
+plan(multisession) # to run asynchronously
+
+f <- future({
+  cat("Hello world!\n")
+  6.28
+})
+
+v <- value(f)
+v
+
+```
+
+```{r}
+plan(multisession)
+
+download_data <- function(){
+  Sys.sleep(0.5)
+  return(c(1,2,3))
+}
+
+run_model <- function(d){
+  Sys.sleep(0.5)
+  return(42)
+}
+
+model_results <- future({
+  d <- download_data()
+  result <- run_model(d)
+  result
+})
+
+while(!resolved(model_results)){
+  cat("Waiting for model to complete...\n")
+  Sys.sleep(0.2)
+  cat("Do some more work, like refresh another graph...\n")
+}
+
+value(model_results)
+```
+
+# Now with purrr and furrr
+```{r}
+library(purrr)
+system.time({
+  res_purrr <- map(trials, boot_fx)
+})
+```
+
+```{r}
+library(furrr)
+plan(multisession, workers=8)
+system.time({
+  res_furrr <- future_map(trials, boot_fx, .options=furrr_options(seed=TRUE))
+}) # furrr will control the random number seeds, which are usually very dependent on your computer
+```
+
